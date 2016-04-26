@@ -46,7 +46,7 @@ end
 
 This results in the following image:
 
-!(https://github.com/pbosetti/mruby-plplot/raw/master/block_plot.png)
+![example plot](https://github.com/pbosetti/mruby-plplot/raw/master/block_plot.png)
 
 
 
