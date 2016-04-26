@@ -1,4 +1,4 @@
-# PLPlot --- Plotting gem for mruby
+# PLPlot — Plotting gem for mruby
 
 This library is based on [PLplot](http://plplot.sourceforge.net) for quickly plotting charts with mruby.
 
@@ -46,7 +46,7 @@ end
 
 This results in the following image:
 
-!(http://github.com/pbosetti/mruby-plplot/HEAD/block_plot.png)
+!(https://github.com/pbosetti/mruby-plplot/raw/master/block_plot.png)
 
 
 
