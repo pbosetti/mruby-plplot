@@ -77,16 +77,14 @@ static mrb_value mrb_plplot_adv(mrb_state *mrb, mrb_value self) {
 
 static mrb_value mrb_plplot_env(mrb_state *mrb, mrb_value self) {
   mrb_float xmin, xmax, ymin, ymax;
-  mrb_int nargs, just, axes;
-  nargs = mrb_get_args(mrb, "ffff|ii", &xmin, &xmax, &ymin, &ymax, &just, &axes);
-  if (nargs < 6) {
-    axes = 0;
-  }
-  if (nargs < 5) {
-    just = 0;
-  }
+  mrb_int nargs, scaling, axes;
+  nargs = mrb_get_args(mrb, "ffff", &xmin, &xmax, &ymin, &ymax);
+  
+  scaling = mrb_fixnum(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@scaling")));
+  axes = mrb_fixnum(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@box")));
+  
   plcol0( 15 );
-  plenv( xmin, xmax, ymin, ymax, just, axes );
+  plenv( xmin, xmax, ymin, ymax, scaling, axes );
   return self;
 }
 

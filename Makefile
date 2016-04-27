@@ -1,6 +1,6 @@
 .PHONY : test
 test:
-	ruby ./run_test.rb test
+	ruby ./build.rb test
 
 .PHONY : all
 all:

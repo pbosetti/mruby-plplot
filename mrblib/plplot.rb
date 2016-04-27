@@ -18,10 +18,37 @@ module PLPlot
     :salmon     => 14,
     :black      => 15
   }
+  SCALING_CODES = {free:0, equal:1, square:2}
+  SCALING_CODES.default = 0
+  BOX_CODES = {nothing:-2, box_only:-1, ticks:0, axes:1, major:2, minor:3}
+  
   @grid = []
   @current_color = 1
+  @scaling = 0
+  @box = 0
   
   def self.colors; COLOR.keys; end
+  
+  def self.scaling=(k)
+    raise ArgumentError, "Only :free, :equal, or :square" unless SCALING_CODES.keys.include? k
+    @scaling = SCALING_CODES[k]
+  end
+  
+  def self.box=(k)
+    case k
+    when Fixnum
+      if (0..3).include?(k.to_s[-1].to_i) && (-1..8).include?(k/10) then
+        @box = k
+      else
+        raise ArgumentError, "Invalid box code (see plenv() C function)"
+      end
+    when Symbol 
+      raise ArgumentError, "Unknown box key" unless BOX_CODES.keys.include? k
+      @box = BOX_CODES[k]
+    else
+      raise ArgumentError, "Unsupported box key"
+    end
+  end
   
   def self.cycle_color
     @current_color = 0 if @current_color == 15
@@ -56,6 +83,20 @@ module PLPlot
     @grid[1] = ny
     return @grid
   end
+  
+  def self.envelope(ary)
+    raise ArgumentError, "Need an argment of PLPlot:Series" unless ary.kind_of? Array
+    pair = ary[0].range
+    ary.inject(pair) {|m,v|
+      r = v.range
+      m[0] = [m[0], r[0]].min
+      m[1] = [m[1], r[1]].max
+      m[2] = [m[2], r[2]].min
+      m[3] = [m[3], r[3]].max
+      m
+    }
+  end
+  
   
   class Series
     attr_accessor :x, :y
