@@ -76,7 +76,7 @@ static mrb_value mrb_plplot_adv(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value mrb_plplot_env(mrb_state *mrb, mrb_value self) {
-  mrb_float xmin, xmax, ymin, ymax;
+  PLFLT xmin, xmax, ymin, ymax;
   mrb_int nargs, scaling, axes;
   nargs = mrb_get_args(mrb, "ffff", &xmin, &xmax, &ymin, &ymax);
   
@@ -86,6 +86,77 @@ static mrb_value mrb_plplot_env(mrb_state *mrb, mrb_value self) {
   plcol0( 15 );
   plenv( xmin, xmax, ymin, ymax, scaling, axes );
   return self;
+}
+
+static mrb_value mrb_plplot_sdidev(mrb_state *mrb, mrb_value self) {
+  PLFLT mar, aspect, jx, jy;
+  mrb_get_args(mrb, "ffff", &mar, &aspect, &jx, &jy);
+  if (jx < -0.5 || jx > 0.5) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "X relative justification must be in [-0.5, 0.5]");
+  }
+  if (jy < -0.5 || jy > 0.5) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Y relative justification must be in [-0.5, 0.5]");
+  }
+  plsdidev(mar, aspect, jx, jy);
+  return self;
+}
+
+static mrb_value mrb_plplot_gdidev(mrb_state *mrb, mrb_value self) {
+  mrb_value ary;
+  PLFLT mar, aspect, jx, jy;
+  plgdidev(&mar, &aspect, &jx, &jy);
+  ary = mrb_ary_new_capa(mrb, 4);
+  mrb_ary_push(mrb, ary, mrb_float_value(mrb, mar));
+  mrb_ary_push(mrb, ary, mrb_float_value(mrb, aspect));
+  mrb_ary_push(mrb, ary, mrb_float_value(mrb, jx));
+  mrb_ary_push(mrb, ary, mrb_float_value(mrb, jy));
+  return ary;
+}
+
+static mrb_value mrb_plplot_spage(mrb_state *mrb, mrb_value self) {
+  PLFLT xp, yp;
+  PLINT xleng, yleng, xoff, yoff;
+  mrb_int nargs;
+  nargs = mrb_get_args(mrb, "ff|iiii", &xp, &yp, &xleng, &yleng, &xoff, &yoff);
+  if (nargs == 6) {
+    plspage(xp, yp, xleng, yleng, xoff, yoff);    
+  }
+  else if (nargs == 2) {
+    plspage(0, 0, (PLINT)xp, (PLINT)yp, 0, 0);
+  }
+  else {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "Only 2 or 6 arguments");
+  }
+  return self;
+}
+
+static mrb_value mrb_plplot_gpage(mrb_state *mrb, mrb_value self) {
+  PLFLT xp, yp;
+  PLINT xleng, yleng, xoff, yoff;
+  mrb_value ary;
+  plgpage(&xp, &yp, &xleng, &yleng, &xoff, &yoff);
+  ary = mrb_ary_new_capa(mrb, 6);
+  mrb_ary_push(mrb, ary, mrb_float_value(mrb, xp));
+  mrb_ary_push(mrb, ary, mrb_float_value(mrb, yp));
+  mrb_ary_push(mrb, ary, mrb_fixnum_value(xleng));
+  mrb_ary_push(mrb, ary, mrb_fixnum_value(yleng));
+  mrb_ary_push(mrb, ary, mrb_fixnum_value(xoff));
+  mrb_ary_push(mrb, ary, mrb_fixnum_value(yoff));
+  return ary;
+}
+
+static mrb_value mrb_plplot_schr(mrb_state *mrb, mrb_value self) {
+  PLFLT scale;
+  mrb_int nargs;
+  nargs = mrb_get_args(mrb, "f", &scale);
+  plschr(0, scale);
+  return self;
+}
+
+static mrb_value mrb_plplot_gchr(mrb_state *mrb, mrb_value self) {
+  PLFLT def, scale;
+  plgchr(&def, &scale);
+  return mrb_float_value(mrb, scale);
 }
 
 static mrb_value mrb_plplot_lab(mrb_state *mrb, mrb_value self) {
@@ -219,6 +290,12 @@ void mrb_mruby_plplot_gem_init(mrb_state *mrb) {
   mrb_define_class_method(mrb, plot, "adv", mrb_plplot_adv, MRB_ARGS_OPT(1));
   mrb_define_class_method(mrb, plot, "env", mrb_plplot_env, MRB_ARGS_ARG(4,2));
   mrb_define_class_method(mrb, plot, "lab", mrb_plplot_lab, MRB_ARGS_ARG(2,1));
+  mrb_define_class_method(mrb, plot, "set_shape", mrb_plplot_sdidev, MRB_ARGS_REQ(4));
+  mrb_define_class_method(mrb, plot, "shape", mrb_plplot_gdidev, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, plot, "set_page", mrb_plplot_spage, MRB_ARGS_ARG(2,4));
+  mrb_define_class_method(mrb, plot, "page", mrb_plplot_gpage, MRB_ARGS_NONE());
+  mrb_define_class_method(mrb, plot, "chr_scale=", mrb_plplot_schr, MRB_ARGS_REQ(1));
+  mrb_define_class_method(mrb, plot, "chr_scale", mrb_plplot_gchr, MRB_ARGS_NONE());
   mrb_define_class_method(mrb, plot, "end", mrb_plplot_end, MRB_ARGS_NONE());
   mrb_define_class_method(mrb, plot, "version", mrb_plplot_ver, MRB_ARGS_NONE());
   
