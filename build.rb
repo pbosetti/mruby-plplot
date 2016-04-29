@@ -1,14 +1,13 @@
 #!/usr/bin/env ruby
-
+BUILD_DIR = 'mruby_build'
 if __FILE__ == $PROGRAM_NAME
   require 'fileutils'
-  FileUtils.mkdir_p 'tmp'
-  unless File.exists?('tmp/mruby')
-    system 'git clone --depth 1 https://github.com/mruby/mruby.git tmp/mruby'
+  unless File.exists?(BUILD_DIR)
+    system "git clone --depth 1 https://github.com/mruby/mruby.git #{BUILD_DIR}"
   end
-  system(%Q[cd tmp/mruby; MRUBY_CONFIG=#{File.expand_path __FILE__} ./minirake #{ARGV.join(' ')}])
-  system %Q"ln -s tmp/mruby/bin/mirb ."
-  exit system %Q"ln -s tmp/mruby/bin/mruby ."
+  system(%Q[cd #{BUILD_DIR}; MRUBY_CONFIG=#{File.expand_path __FILE__} ./minirake #{ARGV.join(' ')}])
+  system %Q"ln -fs #{BUILD_DIR}/bin ."
+  exit 0
 end
 
 MRuby::Build.new do |conf|

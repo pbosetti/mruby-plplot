@@ -183,39 +183,36 @@ static mrb_value mrb_plplot_ver(mrb_state *mrb, mrb_value self) {
   return mrb_str_new_cstr(mrb, ver);
 }
 
+static mrb_value mrb_plplot_legend(mrb_state *mrb, mrb_value self) {
+  mrb_value position, *names,  *options;
+  mrb_int              names_l, options_l;
+  mrb_value *line_c,  *line_w,  *line_s;
+  mrb_int    line_c_l, line_w_l, line_s_l;
+  mrb_value *point_c,  *point_g,  *point_s;
+  mrb_int    point_c_l, point_g_l, point_s_l;
+  
+  mrb_get_args(mrb, "oaaaaaaaa", 
+    &position, &names, &names_l, &options, &options_l,
+    &line_c, &line_c_l, &line_w, &line_w_l, &line_s, &line_s_l,
+    &point_c, &point_c_l, &point_g, &point_g_l, &point_s, &point_s_l
+  );
+  return mrb_nil_value();
+}
+
+
 
 /*
   SERIES CLASS
 */
 static mrb_value mrb_series_line(mrb_state *mrb, mrb_value self) {
-  mrb_int len, i, nargs, style;
+  mrb_int len, i, style, col;
   mrb_float width;
-  mrb_value col, x, y;
+  mrb_value x, y;
   PLFLT *px, *py;
-  nargs = mrb_get_args(mrb, "|ofi", &col, &width, &style);
-  if (nargs == 3) {
-    pllsty(style);
-  }
-  if (nargs >= 2) {
-    plwidth(width);
-  }
-  if (nargs >= 1) {
-    if (mrb_fixnum_p(col)) {
-      plcol0(mrb_fixnum(col));
-    }
-    else if (mrb_symbol_p(col)) {
-      mrb_value mod = mrb_obj_value(mrb_module_get(mrb, "PLPlot"));
-      mrb_value colors = mrb_const_get(mrb, mod, mrb_intern_lit(mrb, "COLORS"));
-      mrb_value c = mrb_hash_get(mrb, colors, col);
-      plcol0(mrb_fixnum(c));
-    }
-    else {
-      plcol0(15);
-    }
-  }
-  else {
-    plcol0(15);
-  }
+  mrb_get_args(mrb, "ifi", &col, &width, &style);
+  pllsty(style);
+  plwidth(width);
+  plcol0(col);
   len = mrb_fixnum(mrb_funcall(mrb, self, "length", 0));
   x = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@x"));
   y = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@y"));
@@ -236,30 +233,11 @@ static mrb_value mrb_series_line(mrb_state *mrb, mrb_value self) {
 
 
 static mrb_value mrb_series_points(mrb_state *mrb, mrb_value self) {
-  mrb_int len, i, nargs, glyph;
-  mrb_value col, x, y;
+  mrb_int len, i, nargs, glyph, col;
+  mrb_value x, y;
   PLFLT *px, *py;
-  nargs = mrb_get_args(mrb, "|oi", &col, &glyph);
-  if (nargs < 2) {
-    glyph = 0;
-  }
-  if (nargs >= 1) {
-    if (mrb_fixnum_p(col)) {
-      plcol0(mrb_fixnum(col));
-    }
-    else if (mrb_symbol_p(col)) {
-      mrb_value mod = mrb_obj_value(mrb_module_get(mrb, "PLPlot"));
-      mrb_value colors = mrb_const_get(mrb, mod, mrb_intern_lit(mrb, "COLORS"));
-      mrb_value c = mrb_hash_get(mrb, colors, col);
-      plcol0(mrb_fixnum(c));
-    }
-    else {
-      plcol0(15);
-    }
-  }
-  else {
-    plcol0(15);
-  }
+  nargs = mrb_get_args(mrb, "|ii", &col, &glyph);
+  plcol0(col);
   len = mrb_fixnum(mrb_funcall(mrb, self, "length", 0));
   x = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@x"));
   y = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@y"));
@@ -298,10 +276,12 @@ void mrb_mruby_plplot_gem_init(mrb_state *mrb) {
   mrb_define_class_method(mrb, plot, "chr_scale", mrb_plplot_gchr, MRB_ARGS_NONE());
   mrb_define_class_method(mrb, plot, "end", mrb_plplot_end, MRB_ARGS_NONE());
   mrb_define_class_method(mrb, plot, "version", mrb_plplot_ver, MRB_ARGS_NONE());
+  // arguments: position, names, options, 3xlines, 3xpoints = 9
+  mrb_define_class_method(mrb, plot, "_legend", mrb_plplot_legend, MRB_ARGS_REQ(9));
   
   series = mrb_define_class_under(mrb, plot, "Series", mrb->object_class);
-  mrb_define_method(mrb, series, "line", mrb_series_line, MRB_ARGS_OPT(3));  
-  mrb_define_method(mrb, series, "points", mrb_series_points, MRB_ARGS_OPT(2));
+  mrb_define_method(mrb, series, "_line", mrb_series_line, MRB_ARGS_REQ(3));  
+  mrb_define_method(mrb, series, "_points", mrb_series_points, MRB_ARGS_REQ(2));
   
 }
 

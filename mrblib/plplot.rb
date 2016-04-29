@@ -29,6 +29,20 @@ module PLPlot
   
   def self.colors; COLOR.keys; end
   
+  def self.get_color(o)
+    case o
+    when Numeric
+      raise ArgumentError, "Numbers from 0 to 15" unless (0..15).include? o
+      return o.to_i
+    when Symbol
+      return COLORS[o] || 15
+    when String
+      return get_color(o.to_sym)
+    else
+      return ArgumentError, "Cannot convert #{o} to a color index"
+    end
+  end
+  
   def self.scaling=(k)
     raise ArgumentError, "Only :free, :equal, or :square" unless SCALING_CODES.keys.include? k
     @scaling = SCALING_CODES[k]
@@ -97,10 +111,29 @@ module PLPlot
     }
   end
   
+  def self.legend
+    self._legend(:tl, [], [], [], [], [], [], [], [])
+  end
   
-  class Series
-    attr_accessor :x, :y
+  
+  class Series    
+    attr_accessor :x, :y, :name
+    attr_accessor :line_color, :width, :style
+    attr_accessor :point_color, :glyph
+    @@count = 0
+
+    def self.count; @@count; end
+
     def initialize
+      @@count += 1
+      @name = "Series \##{@@count}"
+      @line_color = :black
+      @width = 1.0
+      @style = 1
+      @point_color = :black
+      @glyph = 4
+      @line_shown = false
+      @points_shown = false
       self.clean
     end
     
@@ -118,6 +151,16 @@ module PLPlot
       @x << pair[0].to_f
       @y << pair[1].to_f
       return self
+    end
+    
+    def line(color=@line_color, width=@width, style=@style)
+      @line_shown = true
+      self._line(PLPlot.get_color(color), width, style)
+    end
+    
+    def points(color=@point_color, glyph=@glyph)
+      @points_shown = true
+      self._points(PLPlot.get_color(color), glyph)
     end
     
     def clean

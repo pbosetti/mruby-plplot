@@ -1,5 +1,5 @@
 .DS_Store
 ._*
 /tmp/*
-/mirb
-/mruby
+/bin
+/mruby_build
