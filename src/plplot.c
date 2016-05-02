@@ -184,6 +184,7 @@ static mrb_value mrb_plplot_ver(mrb_state *mrb, mrb_value self) {
 }
 
 static mrb_value mrb_plplot_legend(mrb_state *mrb, mrb_value self) {
+  // mruby values
   mrb_value position, *names,  *options;
   mrb_int              names_l, options_l;
   mrb_value *line_c,  *line_w,  *line_s;
@@ -192,10 +193,66 @@ static mrb_value mrb_plplot_legend(mrb_state *mrb, mrb_value self) {
   mrb_int    point_c_l, point_g_l, point_s_l;
   
   mrb_get_args(mrb, "oaaaaaaaa", 
-    &position, &names, &names_l, &options, &options_l,
-    &line_c, &line_c_l, &line_w, &line_w_l, &line_s, &line_s_l,
-    &point_c, &point_c_l, &point_g, &point_g_l, &point_s, &point_s_l
-  );
+  &position, &names, &names_l, &options, &options_l,
+  &line_c, &line_c_l, &line_w, &line_w_l, &line_s, &line_s_l,
+  &point_c, &point_c_l, &point_g, &point_g_l, &point_s, &point_s_l);
+  
+  if (names_l > 0) {
+    // C values
+    mrb_int i;
+    mrb_value result;
+    char   **text           = (char **)calloc(names_l, sizeof(char*));
+    const char   **symbols  = (const char **)calloc(names_l, sizeof(char*));
+    PLINT   *opt_array      = (PLINT *)calloc(names_l, sizeof(PLINT));
+    PLINT   *text_colors    = (PLINT *)calloc(names_l, sizeof(PLINT));
+    PLINT   *line_colors    = (PLINT *)calloc(names_l, sizeof(PLINT));
+    PLINT   *line_styles    = (PLINT *)calloc(names_l, sizeof(PLINT));
+    PLFLT   *line_widths    = (PLFLT *)calloc(names_l, sizeof(PLFLT));
+    PLINT   *symbol_numbers = (PLINT *)calloc(names_l, sizeof(PLINT));
+    PLINT   *symbol_colors  = (PLINT *)calloc(names_l, sizeof(PLINT));
+    PLFLT   *symbol_scales  = (PLFLT *)calloc(names_l, sizeof(PLFLT));
+    PLFLT    legend_width, legend_height;
+    
+    for (i = 0; i < names_l; i++) {
+      text_colors[i] = 15;
+      text[i] = RSTRING_PTR(names[i]);
+      opt_array[i]   = mrb_fixnum(options[i]);
+      line_colors[i] = mrb_fixnum(line_c[i]);
+      line_styles[i] = mrb_fixnum(line_s[i]);
+      line_widths[i] = mrb_to_flo(mrb, line_w[i]);
+      symbol_numbers[i] = 3;
+      symbol_colors[i]  = mrb_fixnum(point_c[i]);
+      symbol_scales[i]  = mrb_to_flo(mrb, point_s[i]);
+      symbols[i]        = "X";
+    }
+    
+    pllegend( &legend_width, &legend_height,
+            PL_LEGEND_BACKGROUND | PL_LEGEND_BOUNDING_BOX, 0,
+            0.0, 0.0, 0.1, 0,
+            15, 1, 0, 0,
+            names_l, opt_array,
+            1.0, 1.0, 2.0,
+            1., text_colors, (const char **) text,
+            NULL, NULL, NULL, NULL,
+            line_colors, line_styles, line_widths,
+            symbol_colors, symbol_scales, symbol_numbers, symbols );
+    
+    free(text          );
+    free(symbols       );
+    free(opt_array     );
+    free(text_colors   );
+    free(line_colors   );
+    free(line_styles   );
+    free(line_widths   );
+    free(symbol_numbers);
+    free(symbol_colors );
+    free(symbol_scales );
+    
+    result = mrb_ary_new_capa(mrb, 2);
+    mrb_ary_set(mrb, result, 0, mrb_float_value(mrb, legend_width));
+    mrb_ary_set(mrb, result, 1, mrb_float_value(mrb, legend_height));
+    return result;
+  }
   return mrb_nil_value();
 }
 
@@ -204,18 +261,19 @@ static mrb_value mrb_plplot_legend(mrb_state *mrb, mrb_value self) {
 /*
   SERIES CLASS
 */
-static mrb_value mrb_series_line(mrb_state *mrb, mrb_value self) {
+static mrb_value mrb_plplot_line(mrb_state *mrb, mrb_value self) {
   mrb_int len, i, style, col;
   mrb_float width;
   mrb_value x, y;
   PLFLT *px, *py;
-  mrb_get_args(mrb, "ifi", &col, &width, &style);
+  mrb_get_args(mrb, "ooifi", &x, &y, &col, &width, &style);
   pllsty(style);
   plwidth(width);
   plcol0(col);
-  len = mrb_fixnum(mrb_funcall(mrb, self, "length", 0));
-  x = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@x"));
-  y = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@y"));
+  if (mrb_type(x) != MRB_TT_ARRAY || mrb_type(y) != MRB_TT_ARRAY) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "x and y must be Arrays");
+  }
+  len = mrb_ary_len(mrb, x);
   px = (PLFLT*)calloc(len, sizeof(PLFLT));
   py = (PLFLT*)calloc(len, sizeof(PLFLT));
   
@@ -232,15 +290,16 @@ static mrb_value mrb_series_line(mrb_state *mrb, mrb_value self) {
 }
 
 
-static mrb_value mrb_series_points(mrb_state *mrb, mrb_value self) {
+static mrb_value mrb_plplot_points(mrb_state *mrb, mrb_value self) {
   mrb_int len, i, nargs, glyph, col;
   mrb_value x, y;
   PLFLT *px, *py;
-  nargs = mrb_get_args(mrb, "|ii", &col, &glyph);
+  nargs = mrb_get_args(mrb, "ooii", &x, &y, &col, &glyph);
   plcol0(col);
-  len = mrb_fixnum(mrb_funcall(mrb, self, "length", 0));
-  x = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@x"));
-  y = mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@y"));
+  if (mrb_type(x) != MRB_TT_ARRAY || mrb_type(y) != MRB_TT_ARRAY) {
+    mrb_raise(mrb, E_ARGUMENT_ERROR, "x and y must be Arrays");
+  }
+  len = mrb_ary_len(mrb, x);
   px = (PLFLT*)calloc(len, sizeof(PLFLT));
   py = (PLFLT*)calloc(len, sizeof(PLFLT));
   
@@ -279,10 +338,10 @@ void mrb_mruby_plplot_gem_init(mrb_state *mrb) {
   // arguments: position, names, options, 3xlines, 3xpoints = 9
   mrb_define_class_method(mrb, plot, "_legend", mrb_plplot_legend, MRB_ARGS_REQ(9));
   
-  series = mrb_define_class_under(mrb, plot, "Series", mrb->object_class);
-  mrb_define_method(mrb, series, "_line", mrb_series_line, MRB_ARGS_REQ(3));  
-  mrb_define_method(mrb, series, "_points", mrb_series_points, MRB_ARGS_REQ(2));
+  mrb_define_class_method(mrb, plot, "_line", mrb_plplot_line, MRB_ARGS_REQ(3));  
+  mrb_define_class_method(mrb, plot, "_points", mrb_plplot_points, MRB_ARGS_REQ(2));
   
+  series = mrb_define_class_under(mrb, plot, "Series", mrb->object_class);
 }
 
 void mrb_mruby_plplot_gem_final(mrb_state *mrb) {}

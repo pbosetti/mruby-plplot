@@ -21,8 +21,6 @@ l2 = PLPlot::Series.new  # second data series
   l2 << [i, i**2.2]
 end
 
-range = PLPlot.envelope [l1, l2] # calculate the XY envelope of l1 and l2
-
 puts "Printing using PLPlot v#{PLPlot.version}"
 puts "Available file formats: #{PLPlot::FORMATS}"
 
@@ -30,18 +28,23 @@ PLPlot.set_grid(1,3)           # I want a grid of 1 column, 3 rows of charts
 PLPlot.set_page(720, 540)      # make it 720px x 540px (default)
 
 PLPlot.plot("block_plot.png") do |p|  # driver is inferred from file extension
-
-  p.env(*range)                # use full range for both l1 and l2
+  
+  range = p.load([l1, l2])     # use full range for both l1 and l2
+  p.env(*range)                
   p.lab("x", "y", "Test Plot from mruby")
   l1.line(:blue, 1, 3)         # thickness 1, line type 3
   l2.line(:red, 2.5)           # thickness 2.5, line type 0 (default)
+  p.legend
   
+  p.load([l1, l2])
   p.box = :major               # see PLPlot::BOX_CODES and PLPlot::SCALING_CODES
   p.env(*l1.range)             # use only range of l1
   p.lab("x", "y", "Second Test Plot from mruby")
   l1.line(:violet)
-  l2.line(:brown)  
+  l2.line(:black, 1)
+  l2.points(:red)
 
+  p.load([l1, l2])
   p.box = :ticks               # sticky attribute (for next subplots)
   p.scaling = :square          # sticky attribute
   p.env(*l1.range)
@@ -49,9 +52,9 @@ PLPlot.plot("block_plot.png") do |p|  # driver is inferred from file extension
   p.lab("x", "y", "Square plot")
   l1.line(PLPlot.cycle_color)  # cycles line color from 1 to 15 at every call
   l2.line(PLPlot.cycle_color)  
-  l2.points(:black, 0)         # black square points
+  l2.points(:black)            # brown square points
   p.chr_scale = 1              # back to default font size
-
+  
 end
 ```
 
@@ -63,8 +66,12 @@ This results in the following image:
 
 ## ToDo
 
-* Legends
+* ~~Legends~~
+* Allow easy positioning of the legend box
+* Allow selection of box/nobox for legend
+* Simplify box creation and envelope calculation (e.g. by using `plenv` and `plenv0` calls)
 * ~~Improve interface of `PLPlot::env`~~
 * ~~Allow to set chart size~~
 * Add support to interctive drivers
 * Add support to 3D charts
+* Move from trivial `Series` class to a more flexible `DataFrame` class (multiple column, C-storage for numerical data)

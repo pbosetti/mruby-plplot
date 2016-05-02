@@ -23,6 +23,7 @@ module PLPlot
   BOX_CODES = {nothing:-2, box_only:-1, ticks:0, axes:1, major:2, minor:3}
   
   @grid = []
+  @series = []
   @current_color = 1
   @scaling = 0
   @box = 0
@@ -98,10 +99,20 @@ module PLPlot
     return @grid
   end
   
-  def self.envelope(ary)
-    raise ArgumentError, "Need an argment of PLPlot:Series" unless ary.kind_of? Array
-    pair = ary[0].range
-    ary.inject(pair) {|m,v|
+  def self.load(series)
+    raise ArgumentError, "Need an Array of PLPlot:Series" unless series.kind_of? Array
+    series.each do |s|
+      s.instance_variable_set("@has_line", false)
+      s.instance_variable_set("@has_points", false)
+    end
+    @series = series
+    return self.envelope
+  end
+  
+  def self.envelope(series=@series)
+    raise ArgumentError, "Need an Array of PLPlot:Series" unless series.kind_of? Array
+    pair = series[0].range
+    series.inject(pair) {|m,v|
       r = v.range
       m[0] = [m[0], r[0]].min
       m[1] = [m[1], r[1]].max
@@ -111,15 +122,42 @@ module PLPlot
     }
   end
   
-  def self.legend
-    self._legend(:tl, [], [], [], [], [], [], [], [])
+  def self.legend(series=@series)
+    names = []
+    options = []
+    lines_c = []
+    lines_w = []
+    lines_s = []
+    point_c = []
+    point_g = []
+    point_s = []
+    
+    series.each do |s|
+      names << s.name
+      options << s.what_in_legend
+      # options[-1] += 1 if s.line_shown
+      # options[-1] += 2 if s.points_shown
+      lines_c << PLPlot.get_color(s.line_color)
+      lines_w << s.width
+      lines_s << s.style
+      point_c << PLPlot.get_color(s.point_color)
+      point_g << s.glyph
+      point_s << s.scale
+    end
+    
+    self._legend(
+      :tl, names, options, 
+      lines_c, lines_w, lines_s, 
+      point_c, point_g, point_s
+    )
   end
   
   
   class Series    
     attr_accessor :x, :y, :name
     attr_accessor :line_color, :width, :style
-    attr_accessor :point_color, :glyph
+    attr_accessor :point_color, :glyph, :scale
+    attr_reader :points_shown, :line_shown
     @@count = 0
 
     def self.count; @@count; end
@@ -132,8 +170,9 @@ module PLPlot
       @style = 1
       @point_color = :black
       @glyph = 4
-      @line_shown = false
-      @points_shown = false
+      @scale = 1
+      @has_line = false
+      @has_points = false
       self.clean
     end
     
@@ -154,13 +193,19 @@ module PLPlot
     end
     
     def line(color=@line_color, width=@width, style=@style)
-      @line_shown = true
-      self._line(PLPlot.get_color(color), width, style)
+      @has_line = true
+      @line_color = color; @width = width; @style = style
+      PLPlot._line(@x, @y, PLPlot.get_color(color), width, style)
     end
     
-    def points(color=@point_color, glyph=@glyph)
-      @points_shown = true
-      self._points(PLPlot.get_color(color), glyph)
+    def points(color=@point_color, glyph=@glyph, scale=@scale)
+      @has_points = true
+      @point_color = color; @glyph = glyph; @scale = scale
+      PLPlot._points(@x, @y, PLPlot.get_color(color), glyph)
+    end
+    
+    def what_in_legend
+      return 0 + (@has_line ? 4 : 0) + (@has_points ? 8 : 0)
     end
     
     def clean
