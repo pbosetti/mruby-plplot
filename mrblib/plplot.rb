@@ -106,7 +106,11 @@ module PLPlot
       s.instance_variable_set("@has_points", false)
     end
     @series = series
-    return self.envelope
+    return self.env(*self.envelope)
+  end
+  
+  def self.set_range(*limits)
+    self.env(*limits, false)
   end
   
   def self.envelope(series=@series)
@@ -201,7 +205,7 @@ module PLPlot
     def points(color=@point_color, glyph=@glyph, scale=@scale)
       @has_points = true
       @point_color = color; @glyph = glyph; @scale = scale
-      PLPlot._points(@x, @y, PLPlot.get_color(color), glyph)
+      PLPlot._points(@x, @y, PLPlot.get_color(color), glyph, scale)
     end
     
     def what_in_legend

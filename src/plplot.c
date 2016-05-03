@@ -77,14 +77,30 @@ static mrb_value mrb_plplot_adv(mrb_state *mrb, mrb_value self) {
 
 static mrb_value mrb_plplot_env(mrb_state *mrb, mrb_value self) {
   PLFLT xmin, xmax, ymin, ymax;
+  mrb_bool advance;
   mrb_int nargs, scaling, axes;
-  nargs = mrb_get_args(mrb, "ffff", &xmin, &xmax, &ymin, &ymax);
+  mrb_value result;
+  
+  nargs = mrb_get_args(mrb, "ffff|b", &xmin, &xmax, &ymin, &ymax, &advance);
+  if (nargs == 4) {
+    advance = MRB_TT_TRUE;
+  }
   
   scaling = mrb_fixnum(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@scaling")));
   axes = mrb_fixnum(mrb_iv_get(mrb, self, mrb_intern_lit(mrb, "@box")));
   
   plcol0( 15 );
-  plenv( xmin, xmax, ymin, ymax, scaling, axes );
+  if (advance == MRB_TT_TRUE) {
+    plenv( xmin, xmax, ymin, ymax, scaling, axes );    
+  }
+  else {
+    plenv0( xmin, xmax, ymin, ymax, scaling, axes );
+  }
+  result = mrb_ary_new_capa(mrb, 4);
+  mrb_ary_push(mrb, result, mrb_float_value(mrb, xmin));
+  mrb_ary_push(mrb, result, mrb_float_value(mrb, xmax));
+  mrb_ary_push(mrb, result, mrb_float_value(mrb, ymin));
+  mrb_ary_push(mrb, result, mrb_float_value(mrb, ymax));
   return self;
 }
 
@@ -292,9 +308,10 @@ static mrb_value mrb_plplot_line(mrb_state *mrb, mrb_value self) {
 
 static mrb_value mrb_plplot_points(mrb_state *mrb, mrb_value self) {
   mrb_int len, i, nargs, glyph, col;
+  mrb_float scale;
   mrb_value x, y;
   PLFLT *px, *py;
-  nargs = mrb_get_args(mrb, "ooii", &x, &y, &col, &glyph);
+  nargs = mrb_get_args(mrb, "ooiif", &x, &y, &col, &glyph, &scale);
   plcol0(col);
   if (mrb_type(x) != MRB_TT_ARRAY || mrb_type(y) != MRB_TT_ARRAY) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "x and y must be Arrays");
@@ -307,6 +324,7 @@ static mrb_value mrb_plplot_points(mrb_state *mrb, mrb_value self) {
     px[i] = mrb_to_flo(mrb, mrb_ary_entry(x, i));
     py[i] = mrb_to_flo(mrb, mrb_ary_entry(y, i));
   }
+  plssym(0, scale);
   plpoin(len, px, py, glyph);
   free(px);
   free(py);
@@ -326,7 +344,7 @@ void mrb_mruby_plplot_gem_init(mrb_state *mrb) {
   mrb_define_class_method(mrb, plot, "sdev", mrb_plplot_sdev, MRB_ARGS_OPT(1));
   mrb_define_class_method(mrb, plot, "adv", mrb_plplot_adv, MRB_ARGS_OPT(1));
   mrb_define_class_method(mrb, plot, "env", mrb_plplot_env, MRB_ARGS_ARG(4,2));
-  mrb_define_class_method(mrb, plot, "lab", mrb_plplot_lab, MRB_ARGS_ARG(2,1));
+  mrb_define_class_method(mrb, plot, "labels", mrb_plplot_lab, MRB_ARGS_ARG(2,1));
   mrb_define_class_method(mrb, plot, "set_shape", mrb_plplot_sdidev, MRB_ARGS_REQ(4));
   mrb_define_class_method(mrb, plot, "shape", mrb_plplot_gdidev, MRB_ARGS_NONE());
   mrb_define_class_method(mrb, plot, "set_page", mrb_plplot_spage, MRB_ARGS_ARG(2,4));
