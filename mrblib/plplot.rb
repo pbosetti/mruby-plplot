@@ -158,7 +158,7 @@ module PLPlot
   
   
   class Series    
-    attr_accessor :x, :y, :name
+    attr_accessor :name
     attr_accessor :line_color, :width, :style
     attr_accessor :point_color, :glyph, :scale
     attr_reader :points_shown, :line_shown
@@ -166,7 +166,7 @@ module PLPlot
 
     def self.count; @@count; end
 
-    def initialize
+    def initialize(df=nil)
       @@count += 1
       @name = "Series \##{@@count}"
       @line_color = :black
@@ -178,19 +178,48 @@ module PLPlot
       @has_line = false
       @has_points = false
       self.clean
+      self.data_frame = df if df
+    end
+    
+    def x
+      if @data_frame then
+        return @data_frame[@x]
+      else
+        return @x
+      end
+    end
+
+    def y
+      if @data_frame then
+        return @data_frame[@y]
+      else
+        return @y
+      end
+    end
+    
+    def data_frame=(df)
+      raise ArgumentError unless df.kind_of? DataFrame
+      @data_frame = df
+      @x, @y = 0, 1
+    end
+    
+    def select(x, y)
+      @x, @y = x, y
+      @name = y.to_s
     end
     
     def length
-      [@x.length, @y.length].min
+      return [x.length, y.length].min
     end
     
     def range
-      return @x.min, @x.max, @y.min, @y.max
+      return x.min, x.max, y.min, y.max
     end
     
     def <<(pair)
       raise ArgumentError, "Need a pair of values" unless pair.kind_of? Array
       raise ArgumentError, "Need a pair of values" unless pair.size == 2
+      raise RuntimeError, "In data_frame mode, cannot push" if @data_frame
       @x << pair[0].to_f
       @y << pair[1].to_f
       return self
@@ -199,13 +228,13 @@ module PLPlot
     def line(color=@line_color, width=@width, style=@style)
       @has_line = true
       @line_color = color; @width = width; @style = style
-      PLPlot._line(@x, @y, PLPlot.get_color(color), width, style)
+      PLPlot._line(x, y, PLPlot.get_color(color), width, style)
     end
     
     def points(color=@point_color, glyph=@glyph, scale=@scale)
       @has_points = true
       @point_color = color; @glyph = glyph; @scale = scale
-      PLPlot._points(@x, @y, PLPlot.get_color(color), glyph, scale)
+      PLPlot._points(x, y, PLPlot.get_color(color), glyph, scale)
     end
     
     def what_in_legend
@@ -215,6 +244,7 @@ module PLPlot
     def clean
       @x = []
       @y = []
+      @data_frame = nil
       return self
     end
   end

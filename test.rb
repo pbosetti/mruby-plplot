@@ -1,10 +1,14 @@
-l1 = PLPlot::Series.new  # first data series
-l2 = PLPlot::Series.new  # second data series
-
-100.times do |i|         # fill data sets with points [x, y]
-  l1 << [i, i**2]
-  l2 << [i, i**2.2]
+df = PLPlot::DataFrame.new %w(time sin cos)
+100.times do |i|
+  t = Math::PI / 50 * i
+  df << [t, Math::sin(t), Math::cos(t)]
 end
+
+l1 = PLPlot::Series.new(df)    # first data series
+l2 = PLPlot::Series.new(df)    # second data series
+
+l1.select "time", "sin"
+l2.select "time", "cos"
 
 puts "Printing using PLPlot v#{PLPlot.version}"
 puts "Available file formats: #{PLPlot::FORMATS}"
@@ -14,7 +18,7 @@ PLPlot.set_page(720, 540)      # make it 720px x 540px (default)
 
 PLPlot.plot("block_plot.png") do |p|  # driver is inferred from file extension
   
-  p.load([l1, l2])     # use full range for both l1 and l2
+  p.load([l1, l2])             # use full range for both l1 and l2
   p.labels("x", "y", "Test Plot from mruby")
   l1.line(:blue, 1, 3)         # thickness 1, line type 3
   l2.line(:red, 2.5)           # thickness 2.5, line type 0 (default)
