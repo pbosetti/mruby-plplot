@@ -18,7 +18,7 @@ PLPlot.plot("block_plot.png") do |p|  # driver is inferred from file extension
   p.labels("x", "y", "Test Plot from mruby")
   l1.line(:blue, 1, 3)         # thickness 1, line type 3
   l2.line(:red, 2.5)           # thickness 2.5, line type 0 (default)
-  p.legend
+  p.legend("tr")
   
   p.load([l1, l2])
   p.box = :major               # see PLPlot::BOX_CODES and PLPlot::SCALING_CODES
@@ -28,6 +28,7 @@ PLPlot.plot("block_plot.png") do |p|  # driver is inferred from file extension
   l2.line(:black, 1)
   l2.scale = 1.5               # set points scale to 1.5
   l2.points(:red)
+  p.legend("tl")
 
   p.load([l1, l2])
   p.box = :ticks               # sticky attribute (for next subplots)

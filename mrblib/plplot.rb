@@ -126,7 +126,7 @@ module PLPlot
     }
   end
   
-  def self.legend(series=@series)
+  def self.legend(position, series=@series)
     names = []
     options = []
     lines_c = []
@@ -150,7 +150,7 @@ module PLPlot
     end
     
     self._legend(
-      :tl, names, options, 
+      position, names, options, 
       lines_c, lines_w, lines_s, 
       point_c, point_g, point_s
     )

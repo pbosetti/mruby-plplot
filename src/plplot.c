@@ -199,6 +199,34 @@ static mrb_value mrb_plplot_ver(mrb_state *mrb, mrb_value self) {
   return mrb_str_new_cstr(mrb, ver);
 }
 
+static mrb_int legend_key_to_id(mrb_state *mrb, mrb_value key) {
+  mrb_int result = 0;
+  switch (mrb_type(key)) {
+    case MRB_TT_FIXNUM:
+      result = mrb_fixnum(key);
+      break;
+    case MRB_TT_STRING: {
+      const char *str = mrb_string_value_cstr(mrb, &key);
+      if (strchr(str, 'i') != NULL)
+        result |= PL_POSITION_INSIDE;
+      if (strchr(str, 'o') != NULL)
+        result |= PL_POSITION_OUTSIDE;
+      if (strchr(str, 't') != NULL)
+        result |= PL_POSITION_TOP;
+      if (strchr(str, 'b') != NULL)
+        result |= PL_POSITION_BOTTOM;
+      if (strchr(str, 'l') != NULL)
+        result |= PL_POSITION_LEFT;
+      if (strchr(str, 'r') != NULL)
+        result |= PL_POSITION_RIGHT;
+      break;
+    }
+    default:
+      break;
+  }
+  return result;
+}
+
 static mrb_value mrb_plplot_legend(mrb_state *mrb, mrb_value self) {
   // mruby values
   mrb_value position, *names,  *options;
@@ -214,9 +242,9 @@ static mrb_value mrb_plplot_legend(mrb_state *mrb, mrb_value self) {
   &point_c, &point_c_l, &point_g, &point_g_l, &point_s, &point_s_l);
   
   if (names_l > 0) {
-    // C values
     mrb_int i;
     mrb_value result;
+    // C values
     char   **text           = (char **)calloc(names_l, sizeof(char*));
     const char   **symbols  = (const char **)calloc(names_l, sizeof(char*));
     PLINT   *opt_array      = (PLINT *)calloc(names_l, sizeof(PLINT));
@@ -243,7 +271,7 @@ static mrb_value mrb_plplot_legend(mrb_state *mrb, mrb_value self) {
     }
     
     pllegend( &legend_width, &legend_height,
-            PL_LEGEND_BACKGROUND | PL_LEGEND_BOUNDING_BOX, 0,
+            PL_LEGEND_BACKGROUND | PL_LEGEND_BOUNDING_BOX, legend_key_to_id(mrb, position),
             0.0, 0.0, 0.1, 0,
             15, 1, 0, 0,
             names_l, opt_array,
@@ -355,9 +383,16 @@ void mrb_mruby_plplot_gem_init(mrb_state *mrb) {
   mrb_define_class_method(mrb, plot, "version", mrb_plplot_ver, MRB_ARGS_NONE());
   // arguments: position, names, options, 3xlines, 3xpoints = 9
   mrb_define_class_method(mrb, plot, "_legend", mrb_plplot_legend, MRB_ARGS_REQ(9));
-  
-  mrb_define_class_method(mrb, plot, "_line", mrb_plplot_line, MRB_ARGS_REQ(3));  
+  mrb_define_class_method(mrb, plot, "_line", mrb_plplot_line, MRB_ARGS_REQ(3));
   mrb_define_class_method(mrb, plot, "_points", mrb_plplot_points, MRB_ARGS_REQ(2));
+  
+  mrb_define_const(mrb, plot, "LEGEND_TOP", mrb_fixnum_value(PL_POSITION_TOP));
+  mrb_define_const(mrb, plot, "LEGEND_BOTTOM", mrb_fixnum_value(PL_POSITION_BOTTOM));
+  mrb_define_const(mrb, plot, "LEGEND_LEFT", mrb_fixnum_value(PL_POSITION_LEFT));
+  mrb_define_const(mrb, plot, "LEGEND_RIGHT", mrb_fixnum_value(PL_POSITION_RIGHT));
+  mrb_define_const(mrb, plot, "LEGEND_INSIDE", mrb_fixnum_value(PL_POSITION_INSIDE));
+  mrb_define_const(mrb, plot, "LEGEND_OUTSIDE", mrb_fixnum_value(PL_POSITION_OUTSIDE));
+  
   
   series = mrb_define_class_under(mrb, plot, "Series", mrb->object_class);
 }
