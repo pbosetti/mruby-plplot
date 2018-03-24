@@ -163,8 +163,7 @@ static mrb_value mrb_plplot_gpage(mrb_state *mrb, mrb_value self) {
 
 static mrb_value mrb_plplot_schr(mrb_state *mrb, mrb_value self) {
   PLFLT scale;
-  mrb_int nargs;
-  nargs = mrb_get_args(mrb, "f", &scale);
+  mrb_get_args(mrb, "f", &scale);
   plschr(0, scale);
   return self;
 }
@@ -317,7 +316,7 @@ static mrb_value mrb_plplot_line(mrb_state *mrb, mrb_value self) {
   if (mrb_type(x) != MRB_TT_ARRAY || mrb_type(y) != MRB_TT_ARRAY) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "x and y must be Arrays");
   }
-  len = mrb_ary_len(mrb, x);
+  len = RARRAY_LEN(x);
   px = (PLFLT*)calloc(len, sizeof(PLFLT));
   py = (PLFLT*)calloc(len, sizeof(PLFLT));
   
@@ -335,16 +334,16 @@ static mrb_value mrb_plplot_line(mrb_state *mrb, mrb_value self) {
 
 
 static mrb_value mrb_plplot_points(mrb_state *mrb, mrb_value self) {
-  mrb_int len, i, nargs, glyph, col;
+  mrb_int len, i, glyph, col;
   mrb_float scale;
   mrb_value x, y;
   PLFLT *px, *py;
-  nargs = mrb_get_args(mrb, "ooiif", &x, &y, &col, &glyph, &scale);
+  mrb_get_args(mrb, "ooiif", &x, &y, &col, &glyph, &scale);
   plcol0(col);
   if (mrb_type(x) != MRB_TT_ARRAY || mrb_type(y) != MRB_TT_ARRAY) {
     mrb_raise(mrb, E_ARGUMENT_ERROR, "x and y must be Arrays");
   }
-  len = mrb_ary_len(mrb, x);
+  len = RARRAY_LEN(x);
   px = (PLFLT*)calloc(len, sizeof(PLFLT));
   py = (PLFLT*)calloc(len, sizeof(PLFLT));
   
@@ -363,7 +362,7 @@ static mrb_value mrb_plplot_points(mrb_state *mrb, mrb_value self) {
 
 
 void mrb_mruby_plplot_gem_init(mrb_state *mrb) {
-  struct RClass *plot, *series;
+  struct RClass *plot;
   plot = mrb_define_module(mrb, "PLPlot");
 
   mrb_define_class_method(mrb, plot, "init", mrb_plplot_init, MRB_ARGS_NONE());
@@ -394,7 +393,7 @@ void mrb_mruby_plplot_gem_init(mrb_state *mrb) {
   mrb_define_const(mrb, plot, "LEGEND_OUTSIDE", mrb_fixnum_value(PL_POSITION_OUTSIDE));
   
   
-  series = mrb_define_class_under(mrb, plot, "Series", mrb->object_class);
+  mrb_define_class_under(mrb, plot, "Series", mrb->object_class);
 }
 
 void mrb_mruby_plplot_gem_final(mrb_state *mrb) {}

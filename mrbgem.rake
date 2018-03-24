@@ -6,8 +6,10 @@ MRuby::Gem::Specification.new('mruby-plplot') do |spec|
   spec.version = 0.1
   spec.description = spec.summary
   spec.homepage = "Not yet defined"
-  
-  if not build.kind_of? MRuby::CrossBuild then
+
+  if respond_to? :search_package
+    search_package 'plplotd'
+  elsif not build.kind_of? MRuby::CrossBuild then
     spec.cc.command = 'gcc' # clang does not work!
     spec.cc.flags << %w||
     spec.cc.include_paths << "/usr/local/include/plplot"
@@ -16,4 +18,5 @@ MRuby::Gem::Specification.new('mruby-plplot') do |spec|
   else
     # complete for your case scenario
   end
+
 end
